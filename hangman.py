@@ -1400,6 +1400,33 @@ def play_menu(player):
             pause()
 
 
+def change_password(player):
+    """Update the logged-in account's password with confirmation."""
+    title("CHANGE PASSWORD")
+    current = input("  Current password: ").strip()
+    if current != player.password:
+        print(paint("  Current password is wrong.", C.RED))
+        pause()
+        return
+    new = input("  New password (min 4 chars): ").strip()
+    if len(new) < 4:
+        print(paint("  Password too short.", C.RED))
+        pause()
+        return
+    if new == player.password:
+        print(paint("  That is already your password.", C.YELLOW))
+        pause()
+        return
+    confirm = input("  Confirm new password: ").strip()
+    if confirm != new:
+        print(paint("  Passwords do not match.", C.RED))
+        pause()
+        return
+    player.password = new
+    print(paint("  Password updated. Use it next time you log in.", C.GREEN))
+    pause()
+
+
 def main_menu(player):
     """Main menu. Returns True to log out, False to quit the program."""
     while True:
@@ -1414,8 +1441,9 @@ def main_menu(player):
         print("   3. Levels")
         print("   4. Statistics")
         print("   5. How to Play")
-        print("   6. Logout")
-        print("   7. Exit game")
+        print("   6. Change password")
+        print("   7. Logout")
+        print("   8. Exit game")
         rule()
         choice = input(paint("   Choose: ", C.BOLD)).strip()
         if choice == "1":
@@ -1429,10 +1457,12 @@ def main_menu(player):
         elif choice == "5":
             how_to_play()
         elif choice == "6":
+            change_password(player)
+        elif choice == "7":
             print(paint("   Logged out. Your progress stays for this session.", C.YELLOW))
             pause()
             return True
-        elif choice == "7":
+        elif choice == "8":
             return False
         else:
             print(paint("   Invalid choice.", C.RED))
