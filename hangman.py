@@ -1252,14 +1252,42 @@ def login():
     return player
 
 
+DEMO_USER = "demo"
+DEMO_PASS = "demo123"
+
+
+def demo_login():
+    """Instantly log into a preset demo account for quick testing."""
+    title("DEMO LOGIN")
+    player = ACCOUNTS.get(DEMO_USER)
+    if player is None:
+        player = Player(DEMO_USER, DEMO_PASS)
+        # Preset progress so every mode can be tried right away.
+        player.score = 500
+        player.best_score = 500
+        player.wins = 5
+        player.games_played = 5
+        player.unlocked_level = 3
+        player.unlocked_sub = 10
+        for lvl in (1, 2):
+            for sub in range(1, 11):
+                player.completed.add((lvl, sub))
+        ACCOUNTS[DEMO_USER] = player
+    print(paint(f"  Logged in as '{DEMO_USER}' (password: {DEMO_PASS}).", C.GREEN))
+    print("  Levels 1-3 are already unlocked. Have fun testing!")
+    pause()
+    return player
+
+
 def auth_menu():
-    """Start screen: login, signup or exit. Returns a Player or None to quit."""
+    """Start screen: login, signup, demo or exit. Returns a Player or None."""
     while True:
         title("A D V A N C E D   H A N G M A N")
         print(paint("        Pure Python  |  36 themes  |  100 sub-levels\n", C.CYAN))
         print("   1. Login")
         print("   2. Sign up")
-        print("   3. Exit")
+        print("   3. Demo login (play instantly)")
+        print("   4. Exit")
         rule()
         choice = input(paint("   Choose: ", C.BOLD)).strip()
         if choice == "1":
@@ -1271,10 +1299,13 @@ def auth_menu():
             if player:
                 return player
         elif choice == "3":
+            return demo_login()
+        elif choice == "4":
             return None
         else:
             print(paint("   Invalid choice.", C.RED))
             pause()
+
 
 
 # ----------------------------------------------------------------------
