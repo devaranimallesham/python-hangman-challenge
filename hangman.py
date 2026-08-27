@@ -1303,6 +1303,34 @@ def reset_demo():
     pause()
 
 
+def reset_all_progress():
+    """Clear scores, stats, unlocks and badges for every account."""
+    title("RESET ALL PROGRESS")
+    if not ACCOUNTS:
+        print(paint("  There are no accounts yet - nothing to reset.", C.YELLOW))
+        pause()
+        return
+    print("  This clears scores, stats, unlocked levels and achievements")
+    print("  for ALL accounts (including demo). Usernames and passwords stay.")
+    rule()
+    confirm = input("  Type RESET to confirm: ").strip()
+    if confirm != "RESET":
+        print(paint("  Reset cancelled.", C.YELLOW))
+        pause()
+        return
+    count = 0
+    for name, player in list(ACCOUNTS.items()):
+        if name == DEMO_USER:
+            make_demo_player()
+        else:
+            fresh = Player(name, player.password)
+            ACCOUNTS[name] = fresh
+        count += 1
+    print(paint(f"  Progress cleared for {count} account(s).", C.GREEN))
+    print(f"  '{DEMO_USER}' was restored to its preset levels 1-3 state.")
+    pause()
+
+
 def auth_menu():
     """Start screen: login, signup, demo or exit. Returns a Player or None."""
     while True:
@@ -1312,7 +1340,8 @@ def auth_menu():
         print("   2. Sign up")
         print("   3. Demo login (play instantly)")
         print("   4. Reset demo (clear demo progress)")
-        print("   5. Exit")
+        print("   5. Reset ALL progress (every account)")
+        print("   6. Exit")
         rule()
         choice = input(paint("   Choose: ", C.BOLD)).strip()
         if choice == "1":
@@ -1328,6 +1357,8 @@ def auth_menu():
         elif choice == "4":
             reset_demo()
         elif choice == "5":
+            reset_all_progress()
+        elif choice == "6":
             return None
         else:
             print(paint("   Invalid choice.", C.RED))
