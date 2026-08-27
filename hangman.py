@@ -1256,27 +1256,51 @@ DEMO_USER = "demo"
 DEMO_PASS = "demo123"
 
 
+def make_demo_player():
+    """Build a fresh demo account with the preset starting progress."""
+    player = Player(DEMO_USER, DEMO_PASS)
+    player.score = 500
+    player.best_score = 500
+    player.wins = 5
+    player.games_played = 5
+    player.unlocked_level = 3
+    player.unlocked_sub = 10
+    for lvl in (1, 2):
+        for sub in range(1, 11):
+            player.completed.add((lvl, sub))
+    ACCOUNTS[DEMO_USER] = player
+    return player
+
+
 def demo_login():
     """Instantly log into a preset demo account for quick testing."""
     title("DEMO LOGIN")
     player = ACCOUNTS.get(DEMO_USER)
     if player is None:
-        player = Player(DEMO_USER, DEMO_PASS)
-        # Preset progress so every mode can be tried right away.
-        player.score = 500
-        player.best_score = 500
-        player.wins = 5
-        player.games_played = 5
-        player.unlocked_level = 3
-        player.unlocked_sub = 10
-        for lvl in (1, 2):
-            for sub in range(1, 11):
-                player.completed.add((lvl, sub))
-        ACCOUNTS[DEMO_USER] = player
+        player = make_demo_player()
     print(paint(f"  Logged in as '{DEMO_USER}' (password: {DEMO_PASS}).", C.GREEN))
     print("  Levels 1-3 are already unlocked. Have fun testing!")
     pause()
     return player
+
+
+def reset_demo():
+    """Wipe only the demo account and rebuild it at levels 1-3."""
+    title("RESET DEMO")
+    if DEMO_USER not in ACCOUNTS:
+        print(paint("  No demo progress to reset - it will start fresh anyway.", C.YELLOW))
+        pause()
+        return
+    confirm = input("  Erase all demo progress? (y/n): ").strip().lower()
+    if confirm != "y":
+        print(paint("  Reset cancelled.", C.YELLOW))
+        pause()
+        return
+    ACCOUNTS.pop(DEMO_USER, None)
+    make_demo_player()
+    print(paint("  Demo account reset. Score 500, levels 1-3 unlocked.", C.GREEN))
+    print("  Other accounts were not touched.")
+    pause()
 
 
 def auth_menu():
@@ -1287,7 +1311,8 @@ def auth_menu():
         print("   1. Login")
         print("   2. Sign up")
         print("   3. Demo login (play instantly)")
-        print("   4. Exit")
+        print("   4. Reset demo (clear demo progress)")
+        print("   5. Exit")
         rule()
         choice = input(paint("   Choose: ", C.BOLD)).strip()
         if choice == "1":
@@ -1301,6 +1326,8 @@ def auth_menu():
         elif choice == "3":
             return demo_login()
         elif choice == "4":
+            reset_demo()
+        elif choice == "5":
             return None
         else:
             print(paint("   Invalid choice.", C.RED))
