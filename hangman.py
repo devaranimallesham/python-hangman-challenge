@@ -862,16 +862,17 @@ def play_word(player, theme, word, hint, label, hints_allowed=1, level=1):
             return False
 
         # ---- input ----
-        print(paint("   Type a letter, or 'hint', or 'quit'", C.GREY))
+        print(paint("   Type a letter, or type 'hint' / 'quit'", C.GREY))
         choice = input(paint("   > ", C.BOLD)).strip().upper()
 
-        if choice in ("QUIT", "Q", "EXIT"):
+        # Only full words are commands, so single letters like Q and H stay guessable.
+        if choice in ("QUIT", "EXIT"):
             print(paint("   Round abandoned.", C.YELLOW))
             player.streak = 0
             pause()
             return False
 
-        if choice in ("HINT", "H", "?"):
+        if choice in ("HINT", "?"):
             if hints_left <= 0:
                 print(paint("   No hints left for this word!", C.RED))
                 pause()
