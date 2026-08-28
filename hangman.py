@@ -1505,21 +1505,27 @@ def play_menu(player):
 def change_password(player):
     """Update the logged-in account's password with confirmation."""
     title("CHANGE PASSWORD")
-    current = ask("  Current password: ").strip()
+    show = ask_show_passwords()
+    rule()
+    current = read_password("  Current password: ", show)
     if current != player.password:
         print(paint("  Current password is wrong.", C.RED))
         pause()
         return
-    new = ask("  New password (min 4 chars): ").strip()
-    if len(new) < 4:
-        print(paint("  Password too short.", C.RED))
+    rule()
+    show_password_rules()
+    new = read_password("  New password: ", show)
+    problems = password_problems(new)
+    if problems:
+        print(paint("  Password too weak: " + ", ".join(problems), C.RED))
         pause()
         return
     if new == player.password:
         print(paint("  That is already your password.", C.YELLOW))
         pause()
         return
-    confirm = ask("  Confirm new password: ").strip()
+    print("  Strength: " + password_strength(new))
+    confirm = read_password("  Confirm new password: ", show)
     if confirm != new:
         print(paint("  Passwords do not match.", C.RED))
         pause()
