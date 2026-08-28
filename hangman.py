@@ -769,6 +769,20 @@ class Player:
         self.unlocked_sub = 1          # highest sub-level unlocked in that level
         self.completed = set()         # set of (level, sub) already cleared
         self.badges = set()            # unlocked achievement keys
+        self.password_history = []     # older passwords, newest first
+
+    # --- password history ----------------------------------------------
+    def recent_passwords(self):
+        """The last few passwords that may not be reused."""
+        return list(self.password_history[:PASSWORD_HISTORY])
+
+    def set_password(self, new_password):
+        """Store the new password and remember the old one in history."""
+        if self.password:
+            self.password_history.insert(0, self.password)
+        del self.password_history[PASSWORD_HISTORY:]
+        self.password = new_password
+
 
     # --- score helpers -------------------------------------------------
     def add_score(self, points):
