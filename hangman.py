@@ -1314,12 +1314,17 @@ def signup():
         print(paint("  That username is already taken.", C.RED))
         pause()
         return None
-    password = ask("  Choose a password (min 4 chars): ").strip()
-    if len(password) < 4:
-        print(paint("  Password too short.", C.RED))
+    show = ask_show_passwords()
+    rule()
+    show_password_rules()
+    password = read_password("  Choose a password: ", show)
+    problems = password_problems(password)
+    if problems:
+        print(paint("  Password too weak: " + ", ".join(problems), C.RED))
         pause()
         return None
-    confirm = ask("  Confirm password: ").strip()
+    print("  Strength: " + password_strength(password))
+    confirm = read_password("  Confirm password: ", show)
     if password != confirm:
         print(paint("  Passwords do not match.", C.RED))
         pause()
