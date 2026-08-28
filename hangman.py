@@ -16,8 +16,12 @@
 =======================================================================
 """
 
+import getpass
 import random
+import select
 import string
+import sys
+import time
 
 # ----------------------------------------------------------------------
 # 1. COLORS  (simple ANSI escape codes - pure Python, no libraries)
