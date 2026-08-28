@@ -16,8 +16,12 @@
 =======================================================================
 """
 
+import getpass
 import random
+import select
 import string
+import sys
+import time
 
 # ----------------------------------------------------------------------
 # 1. COLORS  (simple ANSI escape codes - pure Python, no libraries)
@@ -55,6 +59,99 @@ def title(text):
 
 def rule():
     print(paint("-" * 62, C.GREY))
+
+
+# ----------------------------------------------------------------------
+# 1b. SAFE INPUT, INACTIVITY TIMEOUT AND PASSWORD RULES
+# ----------------------------------------------------------------------
+
+INACTIVITY_LIMIT = 180          # seconds without typing before auto-logout
+
+
+class SessionTimeout(Exception):
+    """Raised when the player has been idle for too long."""
+
+
+def ask(prompt="", timeout=INACTIVITY_LIMIT):
+    """input() with an inactivity timeout. Raises SessionTimeout when idle."""
+    print(prompt, end="", flush=True)
+    if timeout and sys.stdin.isatty():
+        ready, _, _ = select.select([sys.stdin], [], [], timeout)
+        if not ready:
+            raise SessionTimeout()
+        line = sys.stdin.readline()
+    else:
+        line = sys.stdin.readline()
+    if line == "":
+        raise EOFError
+    return line.rstrip("\n")
+
+
+# Password policy used by sign up and change password.
+PASSWORD_MIN = 8
+PASSWORD_RULES = [
+    f"at least {PASSWORD_MIN} characters",
+    "at least one uppercase letter (A-Z)",
+    "at least one lowercase letter (a-z)",
+    "at least one digit (0-9)",
+    "at least one symbol (!@#$%... )",
+    "no spaces",
+]
+
+
+def show_password_rules():
+    """Print the exact password requirements before asking for a new one."""
+    print(paint("  Password requirements:", C.CYAN))
+    for item in PASSWORD_RULES:
+        print(paint("    - " + item, C.GREY))
+    rule()
+
+
+def password_problems(password):
+    """Return a list of unmet password rules (empty list = strong enough)."""
+    problems = []
+    if len(password) < PASSWORD_MIN:
+        problems.append(f"needs at least {PASSWORD_MIN} characters")
+    if not any(ch.isupper() for ch in password):
+        problems.append("needs an uppercase letter")
+    if not any(ch.islower() for ch in password):
+        problems.append("needs a lowercase letter")
+    if not any(ch.isdigit() for ch in password):
+        problems.append("needs a digit")
+    if not any(ch in string.punctuation for ch in password):
+        problems.append("needs a symbol")
+    if any(ch.isspace() for ch in password):
+        problems.append("must not contain spaces")
+    return problems
+
+
+def password_strength(password):
+    """Return a friendly strength label based on how many rules pass."""
+    passed = 6 - len(password_problems(password))
+    if passed >= 6:
+        return paint("STRONG", C.GREEN)
+    if passed >= 4:
+        return paint("MEDIUM", C.YELLOW)
+    return paint("WEAK", C.RED)
+
+
+def read_password(prompt, show):
+    """Read a password: visible when show is True, hidden otherwise."""
+    if show:
+        return ask(prompt).strip()
+    try:
+        return getpass.getpass(prompt).strip()
+    except Exception:
+        # Fallback for terminals where hidden input is unavailable.
+        return ask(prompt).strip()
+
+
+def ask_show_passwords():
+    """Ask once whether typed passwords should be visible."""
+    answer = ask("  Show typed passwords? (y/n): ").strip().lower()
+    return answer in ("y", "yes")
+
+
 
 
 # ----------------------------------------------------------------------
@@ -863,7 +960,7 @@ def play_word(player, theme, word, hint, label, hints_allowed=1, level=1):
 
         # ---- input ----
         print(paint("   Type a letter, or type 'hint' / 'quit'", C.GREY))
-        choice = input(paint("   > ", C.BOLD)).strip().upper()
+        choice = ask(paint("   > ", C.BOLD)).strip().upper()
 
         # Only full words are commands, so single letters like Q and H stay guessable.
         if choice in ("QUIT", "EXIT"):
@@ -918,9 +1015,9 @@ def play_word(player, theme, word, hint, label, hints_allowed=1, level=1):
 def pause(kind=1):
     """Small pause so the player can read the message."""
     if kind:
-        input(paint("   (press Enter to continue)", C.GREY))
+        ask(paint("   (press Enter to continue)", C.GREY))
     else:
-        input(paint("   (Enter)", C.GREY))
+        ask(paint("   (Enter)", C.GREY))
 
 
 # ----------------------------------------------------------------------
@@ -1036,7 +1133,7 @@ def choose_theme():
             row += f"{paint(str(i + j + 1).rjust(2), C.YELLOW)}. {name:<18}"
         print("  " + row)
     rule()
-    raw = input(paint("  Theme number (or 0 to go back): ", C.BOLD)).strip()
+    raw = ask(paint("  Theme number (or 0 to go back): ", C.BOLD)).strip()
     if not raw.isdigit():
         return None
     num = int(raw)
@@ -1059,7 +1156,7 @@ def choose_level(player):
             print(f"  {paint(str(lv).rjust(2), C.GREY)}. "
                   f"{paint(name.ljust(13), C.GREY)} {paint('[LOCKED]', C.RED)}")
     rule()
-    raw = input(paint("  Level number (0 to go back): ", C.BOLD)).strip()
+    raw = ask(paint("  Level number (0 to go back): ", C.BOLD)).strip()
     if not raw.isdigit():
         return None
     lv = int(raw)
@@ -1086,7 +1183,7 @@ def choose_sublevel(player, level):
             state = paint("[LOCKED] ", C.RED)
         print(f"  {str(sub).rjust(2)}. {state}  theme: {theme:<16} {length}")
     rule()
-    raw = input(paint("  Sub-level number (0 to go back): ", C.BOLD)).strip()
+    raw = ask(paint("  Sub-level number (0 to go back): ", C.BOLD)).strip()
     if not raw.isdigit():
         return None
     sub = int(raw)
@@ -1208,7 +1305,7 @@ def how_to_play():
 def signup():
     """Create a new account in memory."""
     title("SIGN UP")
-    username = input("  Choose a username: ").strip()
+    username = ask("  Choose a username: ").strip()
     if not username:
         print(paint("  Username cannot be empty.", C.RED))
         pause()
@@ -1217,12 +1314,17 @@ def signup():
         print(paint("  That username is already taken.", C.RED))
         pause()
         return None
-    password = input("  Choose a password (min 4 chars): ").strip()
-    if len(password) < 4:
-        print(paint("  Password too short.", C.RED))
+    show = ask_show_passwords()
+    rule()
+    show_password_rules()
+    password = read_password("  Choose a password: ", show)
+    problems = password_problems(password)
+    if problems:
+        print(paint("  Password too weak: " + ", ".join(problems), C.RED))
         pause()
         return None
-    confirm = input("  Confirm password: ").strip()
+    print("  Strength: " + password_strength(password))
+    confirm = read_password("  Confirm password: ", show)
     if password != confirm:
         print(paint("  Passwords do not match.", C.RED))
         pause()
@@ -1240,8 +1342,8 @@ def login():
         print(paint("  No accounts yet - please sign up first.", C.YELLOW))
         pause()
         return None
-    username = input("  Username: ").strip()
-    password = input("  Password: ").strip()
+    username = ask("  Username: ").strip()
+    password = ask("  Password: ").strip()
     player = ACCOUNTS.get(username)
     if player is None or player.password != password:
         print(paint("  Wrong username or password.", C.RED))
@@ -1291,7 +1393,7 @@ def reset_demo():
         print(paint("  No demo progress to reset - it will start fresh anyway.", C.YELLOW))
         pause()
         return
-    confirm = input("  Erase all demo progress? (y/n): ").strip().lower()
+    confirm = ask("  Erase all demo progress? (y/n): ").strip().lower()
     if confirm != "y":
         print(paint("  Reset cancelled.", C.YELLOW))
         pause()
@@ -1313,7 +1415,7 @@ def reset_all_progress():
     print("  This clears scores, stats, unlocked levels and achievements")
     print("  for ALL accounts (including demo). Usernames and passwords stay.")
     rule()
-    confirm = input("  Type RESET to confirm: ").strip()
+    confirm = ask("  Type RESET to confirm: ").strip()
     if confirm != "RESET":
         print(paint("  Reset cancelled.", C.YELLOW))
         pause()
@@ -1343,7 +1445,7 @@ def auth_menu():
         print("   5. Reset ALL progress (every account)")
         print("   6. Exit")
         rule()
-        choice = input(paint("   Choose: ", C.BOLD)).strip()
+        choice = ask(paint("   Choose: ", C.BOLD)).strip()
         if choice == "1":
             player = login()
             if player:
@@ -1382,7 +1484,7 @@ def play_menu(player):
         print("   5. Challenge    (5 hard words, 1 hint)")
         print("   6. Back to main menu")
         rule()
-        choice = input(paint("   Choose: ", C.BOLD)).strip()
+        choice = ask(paint("   Choose: ", C.BOLD)).strip()
         if choice == "1":
             mode_classic(player)
         elif choice == "2":
@@ -1403,21 +1505,27 @@ def play_menu(player):
 def change_password(player):
     """Update the logged-in account's password with confirmation."""
     title("CHANGE PASSWORD")
-    current = input("  Current password: ").strip()
+    show = ask_show_passwords()
+    rule()
+    current = read_password("  Current password: ", show)
     if current != player.password:
         print(paint("  Current password is wrong.", C.RED))
         pause()
         return
-    new = input("  New password (min 4 chars): ").strip()
-    if len(new) < 4:
-        print(paint("  Password too short.", C.RED))
+    rule()
+    show_password_rules()
+    new = read_password("  New password: ", show)
+    problems = password_problems(new)
+    if problems:
+        print(paint("  Password too weak: " + ", ".join(problems), C.RED))
         pause()
         return
     if new == player.password:
         print(paint("  That is already your password.", C.YELLOW))
         pause()
         return
-    confirm = input("  Confirm new password: ").strip()
+    print("  Strength: " + password_strength(new))
+    confirm = read_password("  Confirm new password: ", show)
     if confirm != new:
         print(paint("  Passwords do not match.", C.RED))
         pause()
@@ -1445,7 +1553,7 @@ def main_menu(player):
         print("   7. Logout")
         print("   8. Exit game")
         rule()
-        choice = input(paint("   Choose: ", C.BOLD)).strip()
+        choice = ask(paint("   Choose: ", C.BOLD)).strip()
         if choice == "1":
             play_menu(player)
         elif choice == "2":
@@ -1459,14 +1567,26 @@ def main_menu(player):
         elif choice == "6":
             change_password(player)
         elif choice == "7":
-            print(paint("   Logged out. Your progress stays for this session.", C.YELLOW))
-            pause()
-            return True
+            if confirm_logout():
+                print(paint("   Logged out. Your progress stays for this session.", C.YELLOW))
+                pause()
+                return True
         elif choice == "8":
             return False
         else:
             print(paint("   Invalid choice.", C.RED))
             pause()
+
+
+def confirm_logout():
+    """Ask for confirmation so a session is never ended by accident."""
+    rule()
+    answer = ask(paint("   Really log out? (y/n): ", C.BOLD)).strip().lower()
+    if answer in ("y", "yes"):
+        return True
+    print(paint("   Logout cancelled.", C.GREEN))
+    pause()
+    return False
 
 
 # ----------------------------------------------------------------------
@@ -1481,10 +1601,19 @@ def main():
             player = auth_menu()
             if player is None:
                 break
-            keep_going = main_menu(player)
+            try:
+                keep_going = main_menu(player)
+            except SessionTimeout:
+                print(paint(
+                    f"\n  No activity for {INACTIVITY_LIMIT // 60} minutes - "
+                    "you were logged out automatically.", C.YELLOW))
+                pause()
+                continue
             if not keep_going:
                 break
         title("THANKS FOR PLAYING ADVANCED HANGMAN!")
+    except SessionTimeout:
+        print(paint("\n  Session timed out due to inactivity. Bye!", C.YELLOW))
     except (KeyboardInterrupt, EOFError):
         print(paint("\n  Game closed. Bye!", C.YELLOW))
 
