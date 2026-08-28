@@ -960,7 +960,7 @@ def play_word(player, theme, word, hint, label, hints_allowed=1, level=1):
 
         # ---- input ----
         print(paint("   Type a letter, or type 'hint' / 'quit'", C.GREY))
-        choice = input(paint("   > ", C.BOLD)).strip().upper()
+        choice = ask(paint("   > ", C.BOLD)).strip().upper()
 
         # Only full words are commands, so single letters like Q and H stay guessable.
         if choice in ("QUIT", "EXIT"):
@@ -1015,9 +1015,9 @@ def play_word(player, theme, word, hint, label, hints_allowed=1, level=1):
 def pause(kind=1):
     """Small pause so the player can read the message."""
     if kind:
-        input(paint("   (press Enter to continue)", C.GREY))
+        ask(paint("   (press Enter to continue)", C.GREY))
     else:
-        input(paint("   (Enter)", C.GREY))
+        ask(paint("   (Enter)", C.GREY))
 
 
 # ----------------------------------------------------------------------
@@ -1133,7 +1133,7 @@ def choose_theme():
             row += f"{paint(str(i + j + 1).rjust(2), C.YELLOW)}. {name:<18}"
         print("  " + row)
     rule()
-    raw = input(paint("  Theme number (or 0 to go back): ", C.BOLD)).strip()
+    raw = ask(paint("  Theme number (or 0 to go back): ", C.BOLD)).strip()
     if not raw.isdigit():
         return None
     num = int(raw)
@@ -1156,7 +1156,7 @@ def choose_level(player):
             print(f"  {paint(str(lv).rjust(2), C.GREY)}. "
                   f"{paint(name.ljust(13), C.GREY)} {paint('[LOCKED]', C.RED)}")
     rule()
-    raw = input(paint("  Level number (0 to go back): ", C.BOLD)).strip()
+    raw = ask(paint("  Level number (0 to go back): ", C.BOLD)).strip()
     if not raw.isdigit():
         return None
     lv = int(raw)
@@ -1183,7 +1183,7 @@ def choose_sublevel(player, level):
             state = paint("[LOCKED] ", C.RED)
         print(f"  {str(sub).rjust(2)}. {state}  theme: {theme:<16} {length}")
     rule()
-    raw = input(paint("  Sub-level number (0 to go back): ", C.BOLD)).strip()
+    raw = ask(paint("  Sub-level number (0 to go back): ", C.BOLD)).strip()
     if not raw.isdigit():
         return None
     sub = int(raw)
@@ -1305,7 +1305,7 @@ def how_to_play():
 def signup():
     """Create a new account in memory."""
     title("SIGN UP")
-    username = input("  Choose a username: ").strip()
+    username = ask("  Choose a username: ").strip()
     if not username:
         print(paint("  Username cannot be empty.", C.RED))
         pause()
@@ -1314,12 +1314,12 @@ def signup():
         print(paint("  That username is already taken.", C.RED))
         pause()
         return None
-    password = input("  Choose a password (min 4 chars): ").strip()
+    password = ask("  Choose a password (min 4 chars): ").strip()
     if len(password) < 4:
         print(paint("  Password too short.", C.RED))
         pause()
         return None
-    confirm = input("  Confirm password: ").strip()
+    confirm = ask("  Confirm password: ").strip()
     if password != confirm:
         print(paint("  Passwords do not match.", C.RED))
         pause()
@@ -1337,8 +1337,8 @@ def login():
         print(paint("  No accounts yet - please sign up first.", C.YELLOW))
         pause()
         return None
-    username = input("  Username: ").strip()
-    password = input("  Password: ").strip()
+    username = ask("  Username: ").strip()
+    password = ask("  Password: ").strip()
     player = ACCOUNTS.get(username)
     if player is None or player.password != password:
         print(paint("  Wrong username or password.", C.RED))
@@ -1388,7 +1388,7 @@ def reset_demo():
         print(paint("  No demo progress to reset - it will start fresh anyway.", C.YELLOW))
         pause()
         return
-    confirm = input("  Erase all demo progress? (y/n): ").strip().lower()
+    confirm = ask("  Erase all demo progress? (y/n): ").strip().lower()
     if confirm != "y":
         print(paint("  Reset cancelled.", C.YELLOW))
         pause()
@@ -1410,7 +1410,7 @@ def reset_all_progress():
     print("  This clears scores, stats, unlocked levels and achievements")
     print("  for ALL accounts (including demo). Usernames and passwords stay.")
     rule()
-    confirm = input("  Type RESET to confirm: ").strip()
+    confirm = ask("  Type RESET to confirm: ").strip()
     if confirm != "RESET":
         print(paint("  Reset cancelled.", C.YELLOW))
         pause()
@@ -1440,7 +1440,7 @@ def auth_menu():
         print("   5. Reset ALL progress (every account)")
         print("   6. Exit")
         rule()
-        choice = input(paint("   Choose: ", C.BOLD)).strip()
+        choice = ask(paint("   Choose: ", C.BOLD)).strip()
         if choice == "1":
             player = login()
             if player:
@@ -1479,7 +1479,7 @@ def play_menu(player):
         print("   5. Challenge    (5 hard words, 1 hint)")
         print("   6. Back to main menu")
         rule()
-        choice = input(paint("   Choose: ", C.BOLD)).strip()
+        choice = ask(paint("   Choose: ", C.BOLD)).strip()
         if choice == "1":
             mode_classic(player)
         elif choice == "2":
@@ -1500,12 +1500,12 @@ def play_menu(player):
 def change_password(player):
     """Update the logged-in account's password with confirmation."""
     title("CHANGE PASSWORD")
-    current = input("  Current password: ").strip()
+    current = ask("  Current password: ").strip()
     if current != player.password:
         print(paint("  Current password is wrong.", C.RED))
         pause()
         return
-    new = input("  New password (min 4 chars): ").strip()
+    new = ask("  New password (min 4 chars): ").strip()
     if len(new) < 4:
         print(paint("  Password too short.", C.RED))
         pause()
@@ -1514,7 +1514,7 @@ def change_password(player):
         print(paint("  That is already your password.", C.YELLOW))
         pause()
         return
-    confirm = input("  Confirm new password: ").strip()
+    confirm = ask("  Confirm new password: ").strip()
     if confirm != new:
         print(paint("  Passwords do not match.", C.RED))
         pause()
@@ -1542,7 +1542,7 @@ def main_menu(player):
         print("   7. Logout")
         print("   8. Exit game")
         rule()
-        choice = input(paint("   Choose: ", C.BOLD)).strip()
+        choice = ask(paint("   Choose: ", C.BOLD)).strip()
         if choice == "1":
             play_menu(player)
         elif choice == "2":
