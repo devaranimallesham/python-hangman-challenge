@@ -89,6 +89,7 @@ def ask(prompt="", timeout=INACTIVITY_LIMIT):
 
 # Password policy used by sign up and change password.
 PASSWORD_MIN = 8
+PASSWORD_HISTORY = 3      # how many previous passwords are blocked from reuse
 PASSWORD_RULES = [
     f"at least {PASSWORD_MIN} characters",
     "at least one uppercase letter (A-Z)",
@@ -96,6 +97,7 @@ PASSWORD_RULES = [
     "at least one digit (0-9)",
     "at least one symbol (!@#$%... )",
     "no spaces",
+    f"must not match your last {PASSWORD_HISTORY} passwords",
 ]
 
 
