@@ -127,7 +127,17 @@ def password_problems(password):
     return problems
 
 
+def password_reused(player, password):
+    """True when the password matches the current one or the recent history."""
+    if player is None:
+        return False
+    if password == player.password:
+        return True
+    return password in player.recent_passwords()
+
+
 def password_strength(password):
+
     """Return a friendly strength label based on how many rules pass."""
     passed = 6 - len(password_problems(password))
     if passed >= 6:
