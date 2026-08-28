@@ -62,6 +62,99 @@ def rule():
 
 
 # ----------------------------------------------------------------------
+# 1b. SAFE INPUT, INACTIVITY TIMEOUT AND PASSWORD RULES
+# ----------------------------------------------------------------------
+
+INACTIVITY_LIMIT = 180          # seconds without typing before auto-logout
+
+
+class SessionTimeout(Exception):
+    """Raised when the player has been idle for too long."""
+
+
+def ask(prompt="", timeout=INACTIVITY_LIMIT):
+    """input() with an inactivity timeout. Raises SessionTimeout when idle."""
+    print(prompt, end="", flush=True)
+    if timeout and sys.stdin.isatty():
+        ready, _, _ = select.select([sys.stdin], [], [], timeout)
+        if not ready:
+            raise SessionTimeout()
+        line = sys.stdin.readline()
+    else:
+        line = sys.stdin.readline()
+    if line == "":
+        raise EOFError
+    return line.rstrip("\n")
+
+
+# Password policy used by sign up and change password.
+PASSWORD_MIN = 8
+PASSWORD_RULES = [
+    f"at least {PASSWORD_MIN} characters",
+    "at least one uppercase letter (A-Z)",
+    "at least one lowercase letter (a-z)",
+    "at least one digit (0-9)",
+    "at least one symbol (!@#$%... )",
+    "no spaces",
+]
+
+
+def show_password_rules():
+    """Print the exact password requirements before asking for a new one."""
+    print(paint("  Password requirements:", C.CYAN))
+    for item in PASSWORD_RULES:
+        print(paint("    - " + item, C.GREY))
+    rule()
+
+
+def password_problems(password):
+    """Return a list of unmet password rules (empty list = strong enough)."""
+    problems = []
+    if len(password) < PASSWORD_MIN:
+        problems.append(f"needs at least {PASSWORD_MIN} characters")
+    if not any(ch.isupper() for ch in password):
+        problems.append("needs an uppercase letter")
+    if not any(ch.islower() for ch in password):
+        problems.append("needs a lowercase letter")
+    if not any(ch.isdigit() for ch in password):
+        problems.append("needs a digit")
+    if not any(ch in string.punctuation for ch in password):
+        problems.append("needs a symbol")
+    if any(ch.isspace() for ch in password):
+        problems.append("must not contain spaces")
+    return problems
+
+
+def password_strength(password):
+    """Return a friendly strength label based on how many rules pass."""
+    passed = 6 - len(password_problems(password))
+    if passed >= 6:
+        return paint("STRONG", C.GREEN)
+    if passed >= 4:
+        return paint("MEDIUM", C.YELLOW)
+    return paint("WEAK", C.RED)
+
+
+def read_password(prompt, show):
+    """Read a password: visible when show is True, hidden otherwise."""
+    if show:
+        return ask(prompt).strip()
+    try:
+        return getpass.getpass(prompt).strip()
+    except Exception:
+        # Fallback for terminals where hidden input is unavailable.
+        return ask(prompt).strip()
+
+
+def ask_show_passwords():
+    """Ask once whether typed passwords should be visible."""
+    answer = ask("  Show typed passwords? (y/n): ").strip().lower()
+    return answer in ("y", "yes")
+
+
+
+
+# ----------------------------------------------------------------------
 # 2. THEMES:  36 themes, each a list of (WORD, HINT) pairs
 # ----------------------------------------------------------------------
 
