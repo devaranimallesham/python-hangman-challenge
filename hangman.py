@@ -1567,14 +1567,26 @@ def main_menu(player):
         elif choice == "6":
             change_password(player)
         elif choice == "7":
-            print(paint("   Logged out. Your progress stays for this session.", C.YELLOW))
-            pause()
-            return True
+            if confirm_logout():
+                print(paint("   Logged out. Your progress stays for this session.", C.YELLOW))
+                pause()
+                return True
         elif choice == "8":
             return False
         else:
             print(paint("   Invalid choice.", C.RED))
             pause()
+
+
+def confirm_logout():
+    """Ask for confirmation so a session is never ended by accident."""
+    rule()
+    answer = ask(paint("   Really log out? (y/n): ", C.BOLD)).strip().lower()
+    if answer in ("y", "yes"):
+        return True
+    print(paint("   Logout cancelled.", C.GREEN))
+    pause()
+    return False
 
 
 # ----------------------------------------------------------------------
@@ -1589,10 +1601,19 @@ def main():
             player = auth_menu()
             if player is None:
                 break
-            keep_going = main_menu(player)
+            try:
+                keep_going = main_menu(player)
+            except SessionTimeout:
+                print(paint(
+                    f"\n  No activity for {INACTIVITY_LIMIT // 60} minutes - "
+                    "you were logged out automatically.", C.YELLOW))
+                pause()
+                continue
             if not keep_going:
                 break
         title("THANKS FOR PLAYING ADVANCED HANGMAN!")
+    except SessionTimeout:
+        print(paint("\n  Session timed out due to inactivity. Bye!", C.YELLOW))
     except (KeyboardInterrupt, EOFError):
         print(paint("\n  Game closed. Bye!", C.YELLOW))
 
