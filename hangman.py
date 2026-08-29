@@ -1552,9 +1552,6 @@ def change_password(player):
             message = (
                 f"  You cannot reuse any of your last {PASSWORD_HISTORY} passwords."
             )
-        print(paint("  That is already your password.", C.YELLOW))
-        pause()
-        return
         print(paint(message, C.YELLOW if new == player.password else C.RED))
         pause()
         return
