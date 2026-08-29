@@ -768,6 +768,7 @@ class Player:
         self.completed = set()         # set of (level, sub) already cleared
         self.badges = set()            # unlocked achievement keys
         self.password_history = []     # older passwords, newest first
+        self.last_password_change = None  # timestamp string of last change
 
     # --- password history ----------------------------------------------
     def recent_passwords(self):
@@ -780,6 +781,7 @@ class Player:
             self.password_history.insert(0, self.password)
         del self.password_history[PASSWORD_HISTORY:]
         self.password = new_password
+        self.last_password_change = time.strftime("%Y-%m-%d %H:%M:%S")
 
 
     # --- score helpers -------------------------------------------------
