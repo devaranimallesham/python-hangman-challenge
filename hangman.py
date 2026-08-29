@@ -1453,6 +1453,7 @@ def reset_all_progress():
         else:
             fresh = Player(name, player.password)
             fresh.password_history = player.password_history[:PASSWORD_HISTORY]
+            fresh.last_password_change = player.last_password_change
             ACCOUNTS[name] = fresh
         count += 1
     print(paint(f"  Progress cleared for {count} account(s).", C.GREEN))
