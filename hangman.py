@@ -136,6 +136,11 @@ def password_reused(player, password):
     return password in player.recent_passwords()
 
 
+def password_history_reused(player, password):
+    """True when a password matches one of the account's previous passwords."""
+    return player is not None and password in player.recent_passwords()
+
+
 def password_strength(password):
 
     """Return a friendly strength label based on how many rules pass."""
@@ -1452,6 +1457,7 @@ def reset_all_progress():
             make_demo_player()
         else:
             fresh = Player(name, player.password)
+            fresh.password_history = player.password_history[:PASSWORD_HISTORY]
             ACCOUNTS[name] = fresh
         count += 1
     print(paint(f"  Progress cleared for {count} account(s).", C.GREEN))
@@ -1550,13 +1556,20 @@ def change_password(player):
         print(paint("  That is already your password.", C.YELLOW))
         pause()
         return
+    if password_history_reused(player, new):
+        print(paint(
+            f"  You cannot reuse any of your last {PASSWORD_HISTORY} passwords.",
+            C.RED,
+        ))
+        pause()
+        return
     print("  Strength: " + password_strength(new))
     confirm = read_password("  Confirm new password: ", show)
     if confirm != new:
         print(paint("  Passwords do not match.", C.RED))
         pause()
         return
-    player.password = new
+    player.set_password(new)
     print(paint("  Password updated. Use it next time you log in.", C.GREEN))
     pause()
 
