@@ -128,17 +128,10 @@ def password_problems(password):
 
 
 def password_reused(player, password):
-    """True when the password matches the current one or the recent history."""
-    if player is None:
-        return False
-    if password == player.password:
-        return True
-    return password in player.recent_passwords()
-
-
-def password_history_reused(player, password):
-    """True when a password matches one of the account's previous passwords."""
-    return player is not None and password in player.recent_passwords()
+    """True when a password matches the current or recent password history."""
+    return player is not None and (
+        password == player.password or password in player.recent_passwords()
+    )
 
 
 def password_strength(password):
@@ -1552,15 +1545,17 @@ def change_password(player):
         print(paint("  Password too weak: " + ", ".join(problems), C.RED))
         pause()
         return
-    if new == player.password:
+    if password_reused(player, new):
+        if new == player.password:
+            message = "  That is already your password."
+        else:
+            message = (
+                f"  You cannot reuse any of your last {PASSWORD_HISTORY} passwords."
+            )
         print(paint("  That is already your password.", C.YELLOW))
         pause()
         return
-    if password_history_reused(player, new):
-        print(paint(
-            f"  You cannot reuse any of your last {PASSWORD_HISTORY} passwords.",
-            C.RED,
-        ))
+        print(paint(message, C.YELLOW if new == player.password else C.RED))
         pause()
         return
     print("  Strength: " + password_strength(new))
