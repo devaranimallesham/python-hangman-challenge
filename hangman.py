@@ -1565,7 +1565,24 @@ def change_password(player):
         return
     player.set_password(new)
     print(paint("  Password updated. Use it next time you log in.", C.GREEN))
+    show_password_change_summary(player, new)
     pause()
+
+
+def show_password_change_summary(player, new_password):
+    """In-app confirmation summary after a successful password change."""
+    rule()
+    print(paint("  PASSWORD CHANGE CONFIRMATION", C.GREEN))
+    rule()
+    print("  Account            : " + paint(player.username, C.CYAN))
+    print("  Changed at         : " + paint(player.last_password_change, C.CYAN))
+    print("  New strength       : " + password_strength(new_password))
+    kept = len(player.recent_passwords())
+    print(f"  History kept       : last {kept} previous password(s) blocked from reuse")
+    print(paint("  Policy now applied to this account:", C.CYAN))
+    for item in PASSWORD_RULES:
+        print(paint("    - " + item, C.GREY))
+    rule()
 
 
 def main_menu(player):
