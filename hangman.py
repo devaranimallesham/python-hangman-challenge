@@ -768,6 +768,7 @@ class Player:
         self.completed = set()         # set of (level, sub) already cleared
         self.badges = set()            # unlocked achievement keys
         self.password_history = []     # older passwords, newest first
+        self.last_password_change = None  # timestamp string of last change
 
     # --- password history ----------------------------------------------
     def recent_passwords(self):
@@ -780,6 +781,7 @@ class Player:
             self.password_history.insert(0, self.password)
         del self.password_history[PASSWORD_HISTORY:]
         self.password = new_password
+        self.last_password_change = time.strftime("%Y-%m-%d %H:%M:%S")
 
 
     # --- score helpers -------------------------------------------------
@@ -1451,6 +1453,7 @@ def reset_all_progress():
         else:
             fresh = Player(name, player.password)
             fresh.password_history = player.password_history[:PASSWORD_HISTORY]
+            fresh.last_password_change = player.last_password_change
             ACCOUNTS[name] = fresh
         count += 1
     print(paint(f"  Progress cleared for {count} account(s).", C.GREEN))
@@ -1563,7 +1566,24 @@ def change_password(player):
         return
     player.set_password(new)
     print(paint("  Password updated. Use it next time you log in.", C.GREEN))
+    show_password_change_summary(player, new)
     pause()
+
+
+def show_password_change_summary(player, new_password):
+    """In-app confirmation summary after a successful password change."""
+    rule()
+    print(paint("  PASSWORD CHANGE CONFIRMATION", C.GREEN))
+    rule()
+    print("  Account            : " + paint(player.username, C.CYAN))
+    print("  Changed at         : " + paint(player.last_password_change, C.CYAN))
+    print("  New strength       : " + password_strength(new_password))
+    kept = len(player.recent_passwords())
+    print(f"  History kept       : last {kept} previous password(s) blocked from reuse")
+    print(paint("  Policy now applied to this account:", C.CYAN))
+    for item in PASSWORD_RULES:
+        print(paint("    - " + item, C.GREY))
+    rule()
 
 
 def main_menu(player):
