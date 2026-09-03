@@ -12,7 +12,6 @@ import {
   Grid2X2,
   Lightbulb,
   Lock,
-  Menu,
   RotateCcw,
   Shield,
   Sparkles,
@@ -80,7 +79,6 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [view, setView] = useState<View>("play");
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [progress, setProgress] = useState<Progress>(DEFAULT_PROGRESS);
   const [mode, setMode] = useState<Mode>("Classic");
@@ -139,7 +137,6 @@ function Index() {
     setLevelNumber(nextLevel);
     chooseWord(nextMode, nextThemeIndex, nextLevel);
     setView("play");
-    setMobileNavOpen(false);
   };
 
   const finishRound = (won: boolean) => {
@@ -241,24 +238,32 @@ function Index() {
             <div className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-semibold"><Zap size={16} className="text-coral" /> {progress.score.toLocaleString()} <span className="font-normal text-ink/50">points</span></div>
             <div className="flex items-center gap-2 rounded-lg bg-mint/15 px-3 py-2 text-sm font-semibold text-mint-dark"><Flame size={16} /> {progress.streak} streak</div>
           </div>
-          <Button variant="outline" size="icon" className="lg:hidden" onClick={() => setMobileNavOpen((open) => !open)} aria-label="Open navigation"><Menu size={18} /></Button>
         </div>
       </header>
       <div className="mx-auto flex max-w-[1440px]">
-        <aside className={cn("fixed inset-x-0 top-[73px] z-20 border-b border-line bg-paper p-4 lg:static lg:block lg:w-64 lg:shrink-0 lg:border-b-0 lg:border-r lg:bg-transparent lg:p-8", mobileNavOpen ? "block" : "hidden lg:block")}>
+         <aside className="hidden border-line lg:static lg:block lg:w-64 lg:shrink-0 lg:border-r lg:p-8">
           <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-ink/40">Game room</p>
           <nav className="space-y-1">
-            {NAV_ITEMS.map((item) => {
+             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
-              return <button key={item.id} onClick={() => { setView(item.id); setMobileNavOpen(false); }} className={cn("flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-semibold transition-colors", view === item.id ? "bg-ink text-paper" : "text-ink/65 hover:bg-surface hover:text-ink")}><Icon size={18} /> {item.label}{view === item.id && <ChevronRight size={15} className="ml-auto" />}</button>;
+               return <button key={item.id} onClick={() => setView(item.id)} className={cn("flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-semibold transition-colors", view === item.id ? "bg-ink text-paper" : "text-ink/65 hover:bg-surface hover:text-ink")}><Icon size={18} /> {item.label}{view === item.id && <ChevronRight size={15} className="ml-auto" />}</button>;
             })}
           </nav>
           <div className="mt-10 border-t border-line pt-6">
             <div className="rounded-lg bg-surface p-4"><div className="mb-3 flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wider text-ink/50">Current level</span><span className="text-xs font-bold text-coral">{progress.unlockedLevel}/10</span></div><div className="h-2 overflow-hidden rounded-full bg-line"><div className="h-full rounded-full bg-coral transition-all" style={{ width: `${progress.unlockedLevel * 10}%` }} /></div><p className="mt-3 text-xs leading-relaxed text-ink/55">Win rounds to unlock tougher words and earn more points.</p></div>
           </div>
         </aside>
-        <main className="min-w-0 flex-1 px-5 py-8 lg:px-10 lg:py-12">{renderView()}</main>
+         <main className="min-w-0 flex-1 px-4 pb-28 pt-6 sm:px-5 sm:py-8 lg:px-10 lg:py-12">{renderView()}</main>
       </div>
+       <nav aria-label="Game screens" className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper/95 px-2 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-lg lg:hidden">
+         <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
+           {NAV_ITEMS.map((item) => {
+             const Icon = item.icon;
+             const active = view === item.id;
+             return <button key={item.id} onClick={() => setView(item.id)} aria-current={active ? "page" : undefined} className={cn("flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] font-bold transition-colors", active ? "bg-ink text-paper" : "text-ink/45 hover:bg-surface hover:text-ink")}><Icon size={18} strokeWidth={active ? 2.5 : 2} /><span className="truncate">{item.label === "How to play" ? "How to play" : item.label}</span></button>;
+           })}
+         </div>
+       </nav>
     </div>
   );
 }
@@ -271,21 +276,22 @@ interface PlayViewProps {
 function PlayView({ mode, themeName, level, word, revealedWord, guessed, wrongGuesses, maxChances, hintUsed, status, score, onModeChange, onGuess, onHint, onRestart }: PlayViewProps) {
   const message = status === "won" ? "You got it!" : status === "lost" ? "Round over" : "Choose a letter to begin";
   return <div className="mx-auto max-w-6xl animate-in fade-in duration-500">
-    <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-coral">Daily word challenge</p><h1 className="font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">Ready to guess?</h1><p className="mt-3 max-w-xl text-base text-ink/55">A fresh word is waiting. Keep your guesses sharp and save the stick figure.</p></div><div className="flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-3"><Clock3 size={17} className="text-ink/45" /><span className="text-sm font-semibold">No sign-in needed</span></div></div>
+     <div className="mb-6 flex flex-col justify-between gap-4 sm:mb-8 md:flex-row md:items-end"><div><p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-coral">Daily word challenge</p><h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-5xl">Ready to guess?</h1><p className="mt-3 max-w-xl text-sm leading-6 text-ink/55 sm:text-base">A fresh word is waiting. Keep your guesses sharp and save the stick figure.</p></div><div className="flex w-fit items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2.5"><Clock3 size={16} className="text-ink/45" /><span className="text-xs font-semibold sm:text-sm">No sign-in needed</span></div></div>
     <div className="mb-6 flex flex-wrap gap-2">{(["Classic", "Survival", "Random", "Challenge"] as Mode[]).map((item) => <button key={item} onClick={() => onModeChange(item)} className={cn("rounded-lg border px-4 py-2 text-sm font-semibold transition-colors", mode === item ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink/60 hover:border-ink/40 hover:text-ink")}>{item}</button>)}</div>
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.85fr)]">
-      <section className="rounded-lg border border-line bg-surface p-5 shadow-[0_18px_50px_-32px_var(--shadow)] sm:p-8">
+     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.85fr)]">
+       <section className="rounded-lg border border-line bg-surface p-4 shadow-[0_18px_50px_-32px_var(--shadow)] sm:p-8">
         <div className="mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-5"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-lg bg-coral/12 text-2xl">{THEMES.find((theme) => theme.name === themeName)?.icon ?? "🎲"}</span><div><p className="text-xs font-bold uppercase tracking-widest text-ink/40">Theme</p><p className="font-display text-lg font-bold">{themeName}</p></div></div><div className="text-right"><p className="text-xs font-bold uppercase tracking-widest text-ink/40">Level {level.number}</p><p className="font-semibold text-coral">{level.name}</p></div></div>
-        <div className="grid items-center gap-8 md:grid-cols-[220px_1fr]"><HangmanFigure wrongGuesses={wrongGuesses} maxChances={maxChances} /><div><p className="mb-3 text-center text-sm font-semibold text-ink/45 md:text-left">{message}</p><div className="flex flex-wrap justify-center gap-2 md:justify-start" aria-label="Word to guess">{revealedWord.map((letter, index) => <span key={`${index}-${letter}`} className={cn("flex h-12 min-w-9 items-center justify-center border-b-2 px-1 font-display text-2xl font-bold sm:h-14 sm:min-w-11 sm:text-3xl", letter === "_" ? "border-ink/20 text-ink/25" : "border-mint text-ink")}>{letter}</span>)}</div><div className="mt-7 flex flex-wrap items-center justify-center gap-3 md:justify-start"><span className={cn("rounded-full px-3 py-1 text-xs font-bold", wrongGuesses >= maxChances - 1 ? "bg-coral/12 text-coral" : "bg-mint/12 text-mint-dark")}>{maxChances - wrongGuesses} chances left</span>{hintUsed && <span className="rounded-full bg-yellow/20 px-3 py-1 text-xs font-bold text-yellow-dark">Hint used · -{HINT_COST}</span>}</div>{status !== "playing" && <div className={cn("mt-6 rounded-lg p-4 text-center md:text-left", status === "won" ? "bg-mint/12" : "bg-coral/10")}><p className="font-display text-lg font-bold">{status === "won" ? `+${BASE_WIN_SCORE + level.scoreBonus * 10} points earned` : `The word was ${word}`}</p><p className="mt-1 text-sm text-ink/55">{status === "won" ? "Great round. Keep your streak alive." : "Shake it off and try another word."}</p><Button onClick={onRestart} className="mt-3" size="sm"><RotateCcw size={15} /> New word</Button></div>}</div></div>
+         <div className="grid items-center gap-6 md:grid-cols-[220px_1fr]"><HangmanFigure wrongGuesses={wrongGuesses} maxChances={maxChances} status={status} /><div><p className="mb-3 text-center text-sm font-semibold text-ink/45 md:text-left">{message}</p><div className="flex flex-wrap justify-center gap-2 md:justify-start" aria-label="Word to guess">{revealedWord.map((letter, index) => <span key={`${index}-${letter}`} className={cn("flex h-12 min-w-9 items-center justify-center border-b-2 px-1 font-display text-2xl font-bold sm:h-14 sm:min-w-11 sm:text-3xl", letter === "_" ? "border-ink/20 text-ink/25" : "border-mint text-ink")}>{letter}</span>)}</div><div className="mt-6 flex flex-wrap items-center justify-center gap-3 md:justify-start"><span className={cn("rounded-full px-3 py-1 text-xs font-bold", wrongGuesses >= maxChances - 1 ? "bg-coral/12 text-coral" : "bg-mint/12 text-mint-dark")}>{maxChances - wrongGuesses} chances left</span>{hintUsed && <span className="rounded-full bg-yellow/20 px-3 py-1 text-xs font-bold text-yellow-dark">Hint used · -{HINT_COST}</span>}</div>{status !== "playing" && <div className={cn("mt-6 rounded-lg p-4 text-center md:text-left", status === "won" ? "bg-mint/12" : "bg-coral/10")}><p className="font-display text-lg font-bold">{status === "won" ? `+${BASE_WIN_SCORE + level.scoreBonus * 10} points earned` : "The hangman is out of chances"}</p><p className="mt-1 text-sm text-ink/55">{status === "won" ? "Great round. Keep your streak alive." : "The word stays hidden. Start a new round and try again."}</p><Button onClick={onRestart} className="mt-3" size="sm"><RotateCcw size={15} /> New word</Button></div>}</div></div>
       </section>
-      <section className="rounded-lg border border-line bg-ink p-5 text-paper shadow-[0_18px_50px_-32px_var(--shadow)] sm:p-7"><div className="mb-6 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-widest text-paper/45">Your score</p><p className="mt-1 font-display text-4xl font-bold">{score.toLocaleString()}</p></div><span className="flex h-11 w-11 items-center justify-center rounded-lg bg-paper/10 text-yellow"><Trophy size={21} /></span></div><p className="mb-3 text-xs font-bold uppercase tracking-widest text-paper/45">Guesses</p><div className="grid grid-cols-7 gap-2">{LETTERS.map((letter) => { const isGuessed = guessed.has(letter); const isCorrect = isGuessed && word.includes(letter); return <button key={letter} disabled={isGuessed || status !== "playing"} onClick={() => onGuess(letter)} aria-label={`Guess ${letter}`} className={cn("aspect-square rounded-md text-sm font-bold transition-all", !isGuessed && status === "playing" ? "bg-paper/10 text-paper hover:bg-coral hover:text-paper" : isCorrect ? "bg-mint text-ink" : "bg-paper/8 text-paper/25")}>{letter}</button>; })}</div><div className="mt-7 flex items-center justify-between gap-3 border-t border-paper/15 pt-5"><div className="flex items-center gap-2"><Lightbulb size={17} className="text-yellow" /><div><p className="text-sm font-semibold">Need a clue?</p><p className="text-xs text-paper/45">Reveal a letter for {HINT_COST} points</p></div></div><Button variant="secondary" size="sm" onClick={onHint} disabled={hintUsed || score < HINT_COST || status !== "playing"}><Gift size={15} /> Hint</Button></div></section>
+       <section className="rounded-lg border border-line bg-ink p-4 text-paper shadow-[0_18px_50px_-32px_var(--shadow)] sm:p-7"><div className="mb-5 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-widest text-paper/45">Your score</p><p className="mt-1 font-display text-3xl font-bold sm:text-4xl">{score.toLocaleString()}</p></div><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-paper/10 text-yellow"><Trophy size={20} /></span></div><p className="mb-3 text-xs font-bold uppercase tracking-widest text-paper/45">Guesses</p><div className="grid grid-cols-7 gap-1.5 sm:gap-2">{LETTERS.map((letter) => { const isGuessed = guessed.has(letter); const isCorrect = isGuessed && word.includes(letter); return <button key={letter} disabled={isGuessed || status !== "playing"} onClick={() => onGuess(letter)} aria-label={`Guess ${letter}`} className={cn("aspect-square rounded-md text-xs font-bold transition-all sm:text-sm", !isGuessed && status === "playing" ? "bg-paper/10 text-paper hover:bg-coral hover:text-paper" : isCorrect ? "bg-mint text-ink" : "bg-paper/8 text-paper/25")}>{letter}</button>; })}</div><div className="mt-6 flex items-center justify-between gap-3 border-t border-paper/15 pt-4"><div className="flex min-w-0 items-center gap-2"><Lightbulb size={17} className="shrink-0 text-yellow" /><div className="min-w-0"><p className="text-sm font-semibold">Need a clue?</p><p className="truncate text-xs text-paper/45">Reveal a letter for {HINT_COST} points</p></div></div><Button variant="secondary" size="sm" onClick={onHint} disabled={hintUsed || score < HINT_COST || status !== "playing"}><Gift size={15} /> Hint</Button></div></section>
     </div>
   </div>;
 }
 
-function HangmanFigure({ wrongGuesses, maxChances }: { wrongGuesses: number; maxChances: number }) {
+function HangmanFigure({ wrongGuesses, maxChances, status }: { wrongGuesses: number; maxChances: number; status: GameStatus }) {
   const partCount = maxChances === MAX_WRONG ? wrongGuesses : Math.ceil((wrongGuesses / maxChances) * MAX_WRONG);
-  return <div className="mx-auto flex w-full max-w-[220px] flex-col items-center"><svg viewBox="0 0 220 240" className="h-auto w-full text-ink" role="img" aria-label={`${wrongGuesses} of ${maxChances} wrong guesses`}><path d="M36 218h144M60 218V25h92M60 25h82M142 25v31" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />{partCount >= 1 && <circle cx="142" cy="78" r="22" fill="none" stroke="currentColor" strokeWidth="6" className="hangman-pop" />}{partCount >= 2 && <path d="M142 100v62" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 3 && <path d="M142 116l-31 28" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 4 && <path d="M142 116l31 28" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 5 && <path d="M142 162l-28 39" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 6 && <path d="M142 162l28 39" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}</svg><div className="mt-2 flex gap-1" aria-hidden="true">{Array.from({ length: maxChances }, (_, index) => <span key={index} className={cn("h-1.5 w-6 rounded-full", index < wrongGuesses ? "bg-coral" : "bg-ink/10")} />)}</div></div>;
+  const isDead = status === "lost" && partCount >= MAX_WRONG;
+  return <div className="mx-auto flex w-full max-w-[220px] flex-col items-center"><svg viewBox="0 0 220 240" className={cn("h-auto w-full", isDead ? "text-coral" : "text-ink")} role="img" aria-label={isDead ? "Hangman has lost the round" : `${wrongGuesses} of ${maxChances} wrong guesses`}><path d="M36 218h144M60 218V25h92M60 25h82M142 25v31" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />{partCount >= 1 && <circle cx="142" cy="78" r="22" fill="none" stroke="currentColor" strokeWidth="6" className="hangman-pop" />}{partCount >= 2 && <path d="M142 100v62" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 3 && <path d="M142 116l-31 28" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 4 && <path d="M142 116l31 28" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 5 && <path d="M142 162l-28 39" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 6 && <path d="M142 162l28 39M134 71l-6 6m6 0-6-6m22 0-6 6m6 0-6-6M132 89q10-8 20 0" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" /></svg><div className="mt-2 flex gap-1" aria-hidden="true">{Array.from({ length: maxChances }, (_, index) => <span key={index} className={cn("h-1.5 flex-1 rounded-full", index < wrongGuesses ? "bg-coral" : "bg-ink/10")} />)}</div></div>;
 }
 
 function ThemesView({ selectedTheme, onSelect }: { selectedTheme: number; onSelect: (index: number) => void }) {
