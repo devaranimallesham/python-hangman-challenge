@@ -27,6 +27,8 @@ import { ACHIEVEMENTS, BASE_WIN_SCORE, HINT_COST, LEVELS, MAX_WRONG, THEMES } fr
 
 const STORAGE_KEY = "hangman-guest-progress";
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const FALLBACK_THEME = { name: "Video Games", icon: "🎮", words: [{ word: "MINECRAFT", hint: "Blocky sandbox world" }] };
+const FALLBACK_LEVEL = { number: 1, name: "Rookie", maxLength: 5, scoreBonus: 1 };
 const NAV_ITEMS = [
   { id: "play", label: "Play", icon: Gamepad2 },
   { id: "themes", label: "Themes", icon: Grid2X2 },
@@ -84,8 +86,8 @@ function Index() {
   const [mode, setMode] = useState<Mode>("Classic");
   const [themeIndex, setThemeIndex] = useState(0);
   const [levelNumber, setLevelNumber] = useState(1);
-  const [word, setWord] = useState(THEMES[0].words[0].word);
-  const [activeThemeName, setActiveThemeName] = useState(THEMES[0].name);
+  const [word, setWord] = useState((THEMES[0] ?? FALLBACK_THEME).words[0]?.word ?? FALLBACK_THEME.words[0].word);
+  const [activeThemeName, setActiveThemeName] = useState((THEMES[0] ?? FALLBACK_THEME).name);
   const [guessed, setGuessed] = useState<Set<string>>(new Set());
   const [wrongGuesses, setWrongGuesses] = useState(0);
   const [hintUsed, setHintUsed] = useState(false);
@@ -105,8 +107,8 @@ function Index() {
     if (hydrated) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
   }, [hydrated, progress]);
 
-  const currentTheme = THEMES[themeIndex] ?? THEMES[0];
-  const currentLevel = LEVELS[levelNumber - 1] ?? LEVELS[0];
+  const currentTheme = THEMES[themeIndex] ?? THEMES[0] ?? FALLBACK_THEME;
+  const currentLevel = LEVELS[levelNumber - 1] ?? LEVELS[0] ?? FALLBACK_LEVEL;
   const maxChances = mode === "Challenge" ? 4 : MAX_WRONG;
   const revealedWord = useMemo(
     () => word.split("").map((letter) => (guessed.has(letter) ? letter : "_")),
@@ -116,12 +118,12 @@ function Index() {
   const accuracy = progress.rounds === 0 ? 0 : Math.round((progress.wins / progress.rounds) * 100);
 
   const chooseWord = useCallback((nextMode = mode, nextThemeIndex = themeIndex, nextLevel = levelNumber) => {
-    const theme = THEMES[nextThemeIndex] ?? THEMES[0];
-    const level = LEVELS[nextLevel - 1] ?? LEVELS[0];
+    const theme = THEMES[nextThemeIndex] ?? THEMES[0] ?? FALLBACK_THEME;
+    const level = LEVELS[nextLevel - 1] ?? LEVELS[0] ?? FALLBACK_LEVEL;
     const pool = nextMode === "Random" ? THEMES.flatMap((item) => item.words) : theme.words;
     const suitable = pool.filter((item) => item.word.length <= level.maxLength);
     const choices = suitable.length > 0 ? suitable : pool;
-    const selected = choices[Math.floor(Math.random() * choices.length)] ?? theme.words[0];
+    const selected = choices[Math.floor(Math.random() * choices.length)] ?? theme.words[0] ?? FALLBACK_THEME.words[0];
     const sourceTheme = THEMES.find((item) => item.words.some((itemWord) => itemWord.word === selected.word));
     setWord(selected.word);
     setActiveThemeName(nextMode === "Random" ? sourceTheme?.name ?? "Random" : theme.name);
