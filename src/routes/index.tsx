@@ -29,6 +29,7 @@ const STORAGE_KEY = "hangman-guest-progress";
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const FALLBACK_THEME = { name: "Video Games", icon: "🎮", words: [{ word: "MINECRAFT", hint: "Blocky sandbox world" }] };
 const FALLBACK_LEVEL = { number: 1, name: "Rookie", maxLength: 5, scoreBonus: 1 };
+const FALLBACK_WORD = FALLBACK_THEME.words[0];
 const NAV_ITEMS = [
   { id: "play", label: "Play", icon: Gamepad2 },
   { id: "themes", label: "Themes", icon: Grid2X2 },
@@ -86,7 +87,7 @@ function Index() {
   const [mode, setMode] = useState<Mode>("Classic");
   const [themeIndex, setThemeIndex] = useState(0);
   const [levelNumber, setLevelNumber] = useState(1);
-  const [word, setWord] = useState((THEMES[0] ?? FALLBACK_THEME).words[0]?.word ?? FALLBACK_THEME.words[0].word);
+  const [word, setWord] = useState((THEMES[0] ?? FALLBACK_THEME).words[0]?.word ?? FALLBACK_WORD.word);
   const [activeThemeName, setActiveThemeName] = useState((THEMES[0] ?? FALLBACK_THEME).name);
   const [guessed, setGuessed] = useState<Set<string>>(new Set());
   const [wrongGuesses, setWrongGuesses] = useState(0);
@@ -123,7 +124,7 @@ function Index() {
     const pool = nextMode === "Random" ? THEMES.flatMap((item) => item.words) : theme.words;
     const suitable = pool.filter((item) => item.word.length <= level.maxLength);
     const choices = suitable.length > 0 ? suitable : pool;
-    const selected = choices[Math.floor(Math.random() * choices.length)] ?? theme.words[0] ?? FALLBACK_THEME.words[0];
+    const selected = choices[Math.floor(Math.random() * choices.length)] ?? theme.words[0] ?? FALLBACK_WORD;
     const sourceTheme = THEMES.find((item) => item.words.some((itemWord) => itemWord.word === selected.word));
     setWord(selected.word);
     setActiveThemeName(nextMode === "Random" ? sourceTheme?.name ?? "Random" : theme.name);
