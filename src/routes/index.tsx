@@ -291,7 +291,29 @@ function PlayView({ mode, themeName, level, word, revealedWord, guessed, wrongGu
 function HangmanFigure({ wrongGuesses, maxChances, status }: { wrongGuesses: number; maxChances: number; status: GameStatus }) {
   const partCount = maxChances === MAX_WRONG ? wrongGuesses : Math.ceil((wrongGuesses / maxChances) * MAX_WRONG);
   const isDead = status === "lost" && partCount >= MAX_WRONG;
-  return <div className="mx-auto flex w-full max-w-[220px] flex-col items-center"><svg viewBox="0 0 220 240" className={cn("h-auto w-full", isDead ? "text-coral" : "text-ink")} role="img" aria-label={isDead ? "Hangman has lost the round" : `${wrongGuesses} of ${maxChances} wrong guesses`}><path d="M36 218h144M60 218V25h92M60 25h82M142 25v31" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />{partCount >= 1 && <circle cx="142" cy="78" r="22" fill="none" stroke="currentColor" strokeWidth="6" className="hangman-pop" />}{partCount >= 2 && <path d="M142 100v62" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 3 && <path d="M142 116l-31 28" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 4 && <path d="M142 116l31 28" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 5 && <path d="M142 162l-28 39" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 6 && <path d="M142 162l28 39M134 71l-6 6m6 0-6-6m22 0-6 6m6 0-6-6M132 89q10-8 20 0" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" /></svg><div className="mt-2 flex gap-1" aria-hidden="true">{Array.from({ length: maxChances }, (_, index) => <span key={index} className={cn("h-1.5 flex-1 rounded-full", index < wrongGuesses ? "bg-coral" : "bg-ink/10")} />)}</div></div>;
+  return (
+    <div className="mx-auto flex w-full max-w-[220px] flex-col items-center">
+      <svg
+        viewBox="0 0 220 240"
+        className={cn("h-auto w-full", isDead ? "text-coral" : "text-ink")}
+        role="img"
+        aria-label={isDead ? "Hangman has lost the round" : `${wrongGuesses} of ${maxChances} wrong guesses`}
+      >
+        <path d="M36 218h144M60 218V25h92M60 25h82M142 25v31" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+        {partCount >= 1 && <circle cx="142" cy="78" r="22" fill="none" stroke="currentColor" strokeWidth="6" className="hangman-pop" />}
+        {partCount >= 2 && <path d="M142 100v62" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}
+        {partCount >= 3 && <path d="M142 116l-31 28" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}
+        {partCount >= 4 && <path d="M142 116l31 28" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}
+        {partCount >= 5 && <path d="M142 162l-28 39" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}
+        {partCount >= 6 && <path d="M142 162l28 39M134 71l-6 6m6 0-6-6m22 0-6 6m6 0-6-6M132 89q10-8 20 0" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />}
+      </svg>
+      <div className="mt-2 flex w-full gap-1" aria-hidden="true">
+        {Array.from({ length: maxChances }, (_, index) => (
+          <span key={index} className={cn("h-1.5 flex-1 rounded-full", index < wrongGuesses ? "bg-coral" : "bg-ink/10")} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function ThemesView({ selectedTheme, onSelect }: { selectedTheme: number; onSelect: (index: number) => void }) {
