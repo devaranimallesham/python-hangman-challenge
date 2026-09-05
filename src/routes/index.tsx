@@ -27,6 +27,9 @@ import { ACHIEVEMENTS, BASE_WIN_SCORE, HINT_COST, LEVELS, MAX_WRONG, THEMES } fr
 
 const STORAGE_KEY = "hangman-guest-progress";
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const FALLBACK_THEME = { name: "Video Games", icon: "🎮", words: [{ word: "MINECRAFT", hint: "Blocky sandbox world" }] };
+const FALLBACK_LEVEL = { number: 1, name: "Rookie", maxLength: 5, scoreBonus: 1 };
+const FALLBACK_WORD = { word: "MINECRAFT", hint: "Blocky sandbox world" };
 const NAV_ITEMS = [
   { id: "play", label: "Play", icon: Gamepad2 },
   { id: "themes", label: "Themes", icon: Grid2X2 },
@@ -84,8 +87,8 @@ function Index() {
   const [mode, setMode] = useState<Mode>("Classic");
   const [themeIndex, setThemeIndex] = useState(0);
   const [levelNumber, setLevelNumber] = useState(1);
-  const [word, setWord] = useState(THEMES[0].words[0].word);
-  const [activeThemeName, setActiveThemeName] = useState(THEMES[0].name);
+  const [word, setWord] = useState((THEMES[0] ?? FALLBACK_THEME).words[0]?.word ?? FALLBACK_WORD.word);
+  const [activeThemeName, setActiveThemeName] = useState((THEMES[0] ?? FALLBACK_THEME).name);
   const [guessed, setGuessed] = useState<Set<string>>(new Set());
   const [wrongGuesses, setWrongGuesses] = useState(0);
   const [hintUsed, setHintUsed] = useState(false);
@@ -105,8 +108,8 @@ function Index() {
     if (hydrated) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
   }, [hydrated, progress]);
 
-  const currentTheme = THEMES[themeIndex] ?? THEMES[0];
-  const currentLevel = LEVELS[levelNumber - 1] ?? LEVELS[0];
+  const currentTheme = THEMES[themeIndex] ?? THEMES[0] ?? FALLBACK_THEME;
+  const currentLevel = LEVELS[levelNumber - 1] ?? LEVELS[0] ?? FALLBACK_LEVEL;
   const maxChances = mode === "Challenge" ? 4 : MAX_WRONG;
   const revealedWord = useMemo(
     () => word.split("").map((letter) => (guessed.has(letter) ? letter : "_")),
@@ -116,12 +119,12 @@ function Index() {
   const accuracy = progress.rounds === 0 ? 0 : Math.round((progress.wins / progress.rounds) * 100);
 
   const chooseWord = useCallback((nextMode = mode, nextThemeIndex = themeIndex, nextLevel = levelNumber) => {
-    const theme = THEMES[nextThemeIndex] ?? THEMES[0];
-    const level = LEVELS[nextLevel - 1] ?? LEVELS[0];
+    const theme = THEMES[nextThemeIndex] ?? THEMES[0] ?? FALLBACK_THEME;
+    const level = LEVELS[nextLevel - 1] ?? LEVELS[0] ?? FALLBACK_LEVEL;
     const pool = nextMode === "Random" ? THEMES.flatMap((item) => item.words) : theme.words;
     const suitable = pool.filter((item) => item.word.length <= level.maxLength);
     const choices = suitable.length > 0 ? suitable : pool;
-    const selected = choices[Math.floor(Math.random() * choices.length)] ?? theme.words[0];
+    const selected = choices[Math.floor(Math.random() * choices.length)] ?? theme.words[0] ?? FALLBACK_WORD;
     const sourceTheme = THEMES.find((item) => item.words.some((itemWord) => itemWord.word === selected.word));
     setWord(selected.word);
     setActiveThemeName(nextMode === "Random" ? sourceTheme?.name ?? "Random" : theme.name);
@@ -291,7 +294,29 @@ function PlayView({ mode, themeName, level, word, revealedWord, guessed, wrongGu
 function HangmanFigure({ wrongGuesses, maxChances, status }: { wrongGuesses: number; maxChances: number; status: GameStatus }) {
   const partCount = maxChances === MAX_WRONG ? wrongGuesses : Math.ceil((wrongGuesses / maxChances) * MAX_WRONG);
   const isDead = status === "lost" && partCount >= MAX_WRONG;
-  return <div className="mx-auto flex w-full max-w-[220px] flex-col items-center"><svg viewBox="0 0 220 240" className={cn("h-auto w-full", isDead ? "text-coral" : "text-ink")} role="img" aria-label={isDead ? "Hangman has lost the round" : `${wrongGuesses} of ${maxChances} wrong guesses`}><path d="M36 218h144M60 218V25h92M60 25h82M142 25v31" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />{partCount >= 1 && <circle cx="142" cy="78" r="22" fill="none" stroke="currentColor" strokeWidth="6" className="hangman-pop" />}{partCount >= 2 && <path d="M142 100v62" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 3 && <path d="M142 116l-31 28" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 4 && <path d="M142 116l31 28" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 5 && <path d="M142 162l-28 39" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}{partCount >= 6 && <path d="M142 162l28 39M134 71l-6 6m6 0-6-6m22 0-6 6m6 0-6-6M132 89q10-8 20 0" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" /></svg><div className="mt-2 flex gap-1" aria-hidden="true">{Array.from({ length: maxChances }, (_, index) => <span key={index} className={cn("h-1.5 flex-1 rounded-full", index < wrongGuesses ? "bg-coral" : "bg-ink/10")} />)}</div></div>;
+  return (
+    <div className="mx-auto flex w-full max-w-[220px] flex-col items-center">
+      <svg
+        viewBox="0 0 220 240"
+        className={cn("h-auto w-full", isDead ? "text-coral" : "text-ink")}
+        role="img"
+        aria-label={isDead ? "Hangman has lost the round" : `${wrongGuesses} of ${maxChances} wrong guesses`}
+      >
+        <path d="M36 218h144M60 218V25h92M60 25h82M142 25v31" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+        {partCount >= 1 && <circle cx="142" cy="78" r="22" fill="none" stroke="currentColor" strokeWidth="6" className="hangman-pop" />}
+        {partCount >= 2 && <path d="M142 100v62" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}
+        {partCount >= 3 && <path d="M142 116l-31 28" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}
+        {partCount >= 4 && <path d="M142 116l31 28" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}
+        {partCount >= 5 && <path d="M142 162l-28 39" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />}
+        {partCount >= 6 && <path d="M142 162l28 39M134 71l-6 6m6 0-6-6m22 0-6 6m6 0-6-6M132 89q10-8 20 0" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />}
+      </svg>
+      <div className="mt-2 flex w-full gap-1" aria-hidden="true">
+        {Array.from({ length: maxChances }, (_, index) => (
+          <span key={index} className={cn("h-1.5 flex-1 rounded-full", index < wrongGuesses ? "bg-coral" : "bg-ink/10")} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function ThemesView({ selectedTheme, onSelect }: { selectedTheme: number; onSelect: (index: number) => void }) {
