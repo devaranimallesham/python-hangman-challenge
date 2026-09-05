@@ -29,7 +29,7 @@ const STORAGE_KEY = "hangman-guest-progress";
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const FALLBACK_THEME = { name: "Video Games", icon: "🎮", words: [{ word: "MINECRAFT", hint: "Blocky sandbox world" }] };
 const FALLBACK_LEVEL = { number: 1, name: "Rookie", maxLength: 5, scoreBonus: 1 };
-const FALLBACK_WORD = FALLBACK_THEME.words[0];
+const FALLBACK_WORD = { word: "MINECRAFT", hint: "Blocky sandbox world" };
 const NAV_ITEMS = [
   { id: "play", label: "Play", icon: Gamepad2 },
   { id: "themes", label: "Themes", icon: Grid2X2 },
