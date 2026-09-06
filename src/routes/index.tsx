@@ -5,7 +5,6 @@ import {
   Check,
   ChevronRight,
   CircleHelp,
-  Clock3,
   Flame,
   Gamepad2,
   Gift,
@@ -26,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { ACHIEVEMENTS, BASE_WIN_SCORE, HINT_COST, LEVELS, MAX_WRONG, THEMES } from "@/lib/hangman-data";
 
 const STORAGE_KEY = "hangman-guest-progress";
+const NAME_STORAGE_KEY = "hangman-player-name";
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const FALLBACK_THEME = { name: "Video Games", icon: "🎮", words: [{ word: "MINECRAFT", hint: "Blocky sandbox world" }] };
 const FALLBACK_LEVEL = { number: 1, name: "Rookie", maxLength: 5, scoreBonus: 1 };
@@ -83,6 +83,8 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [view, setView] = useState<View>("play");
   const [hydrated, setHydrated] = useState(false);
+  const [playerName, setPlayerName] = useState("");
+  const [nameInput, setNameInput] = useState("");
   const [progress, setProgress] = useState<Progress>(DEFAULT_PROGRESS);
   const [mode, setMode] = useState<Mode>("Classic");
   const [themeIndex, setThemeIndex] = useState(0);
@@ -98,6 +100,11 @@ function Index() {
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) setProgress({ ...DEFAULT_PROGRESS, ...JSON.parse(saved) });
+      const savedName = window.localStorage.getItem(NAME_STORAGE_KEY);
+      if (savedName) {
+        setPlayerName(savedName);
+        setNameInput(savedName);
+      }
     } catch {
       // A private browsing session can deny storage; the game still works in memory.
     }
@@ -117,6 +124,18 @@ function Index() {
   );
   const isComplete = revealedWord.every((letter) => letter !== "_");
   const accuracy = progress.rounds === 0 ? 0 : Math.round((progress.wins / progress.rounds) * 100);
+
+  const enterGame = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedName = nameInput.trim();
+    if (!trimmedName) return;
+    setPlayerName(trimmedName);
+    try {
+      window.localStorage.setItem(NAME_STORAGE_KEY, trimmedName);
+    } catch {
+      // The game still works if storage is unavailable.
+    }
+  };
 
   const chooseWord = useCallback((nextMode = mode, nextThemeIndex = themeIndex, nextLevel = levelNumber) => {
     const theme = THEMES[nextThemeIndex] ?? THEMES[0] ?? FALLBACK_THEME;
@@ -221,6 +240,7 @@ function Index() {
         hintUsed={hintUsed}
         status={status}
         score={progress.score}
+         playerName={playerName}
         onModeChange={(nextMode) => startRound(nextMode)}
         onGuess={handleGuess}
         onHint={useHint}
@@ -228,6 +248,14 @@ function Index() {
       />
     );
   };
+
+  if (!hydrated) {
+    return <div className="min-h-screen bg-paper" aria-label="Loading Hangman" />;
+  }
+
+  if (!playerName) {
+    return <NameEntry name={nameInput} onNameChange={setNameInput} onSubmit={enterGame} />;
+  }
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -272,23 +300,28 @@ function Index() {
 }
 
 interface PlayViewProps {
-  mode: Mode; themeName: string; level: (typeof LEVELS)[number]; word: string; revealedWord: string[]; guessed: Set<string>; wrongGuesses: number; maxChances: number; hintUsed: boolean; status: GameStatus; score: number;
+  mode: Mode; themeName: string; level: (typeof LEVELS)[number]; word: string; revealedWord: string[]; guessed: Set<string>; wrongGuesses: number; maxChances: number; hintUsed: boolean; status: GameStatus; score: number; playerName: string;
   onModeChange: (mode: Mode) => void; onGuess: (letter: string) => void; onHint: () => void; onRestart: () => void;
 }
 
-function PlayView({ mode, themeName, level, word, revealedWord, guessed, wrongGuesses, maxChances, hintUsed, status, score, onModeChange, onGuess, onHint, onRestart }: PlayViewProps) {
+function PlayView({ mode, themeName, level, word, revealedWord, guessed, wrongGuesses, maxChances, hintUsed, status, score, playerName, onModeChange, onGuess, onHint, onRestart }: PlayViewProps) {
   const message = status === "won" ? "You got it!" : status === "lost" ? "Round over" : "Choose a letter to begin";
   return <div className="mx-auto max-w-6xl animate-in fade-in duration-500">
-     <div className="mb-6 flex flex-col justify-between gap-4 sm:mb-8 md:flex-row md:items-end"><div><p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-coral">Daily word challenge</p><h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-5xl">Ready to guess?</h1><p className="mt-3 max-w-xl text-sm leading-6 text-ink/55 sm:text-base">A fresh word is waiting. Keep your guesses sharp and save the stick figure.</p></div><div className="flex w-fit items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2.5"><Clock3 size={16} className="text-ink/45" /><span className="text-xs font-semibold sm:text-sm">No sign-in needed</span></div></div>
+     <div className="mb-6 flex flex-col justify-between gap-4 sm:mb-8 md:flex-row md:items-end"><div><p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-coral">Welcome, {playerName}</p><h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-5xl">Ready to guess?</h1><p className="mt-3 max-w-xl text-sm leading-6 text-ink/55 sm:text-base">A fresh word is waiting. Keep your guesses sharp and save the stick figure.</p></div></div>
     <div className="mb-6 flex flex-wrap gap-2">{(["Classic", "Survival", "Random", "Challenge"] as Mode[]).map((item) => <button key={item} onClick={() => onModeChange(item)} className={cn("rounded-lg border px-4 py-2 text-sm font-semibold transition-colors", mode === item ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink/60 hover:border-ink/40 hover:text-ink")}>{item}</button>)}</div>
      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.85fr)]">
        <section className="rounded-lg border border-line bg-surface p-4 shadow-[0_18px_50px_-32px_var(--shadow)] sm:p-8">
         <div className="mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-5"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-lg bg-coral/12 text-2xl">{THEMES.find((theme) => theme.name === themeName)?.icon ?? "🎲"}</span><div><p className="text-xs font-bold uppercase tracking-widest text-ink/40">Theme</p><p className="font-display text-lg font-bold">{themeName}</p></div></div><div className="text-right"><p className="text-xs font-bold uppercase tracking-widest text-ink/40">Level {level.number}</p><p className="font-semibold text-coral">{level.name}</p></div></div>
          <div className="grid items-center gap-6 md:grid-cols-[220px_1fr]"><HangmanFigure wrongGuesses={wrongGuesses} maxChances={maxChances} status={status} /><div><p className="mb-3 text-center text-sm font-semibold text-ink/45 md:text-left">{message}</p><div className="flex flex-wrap justify-center gap-2 md:justify-start" aria-label="Word to guess">{revealedWord.map((letter, index) => <span key={`${index}-${letter}`} className={cn("flex h-12 min-w-9 items-center justify-center border-b-2 px-1 font-display text-2xl font-bold sm:h-14 sm:min-w-11 sm:text-3xl", letter === "_" ? "border-ink/20 text-ink/25" : "border-mint text-ink")}>{letter}</span>)}</div><div className="mt-6 flex flex-wrap items-center justify-center gap-3 md:justify-start"><span className={cn("rounded-full px-3 py-1 text-xs font-bold", wrongGuesses >= maxChances - 1 ? "bg-coral/12 text-coral" : "bg-mint/12 text-mint-dark")}>{maxChances - wrongGuesses} chances left</span>{hintUsed && <span className="rounded-full bg-yellow/20 px-3 py-1 text-xs font-bold text-yellow-dark">Hint used · -{HINT_COST}</span>}</div>{status !== "playing" && <div className={cn("mt-6 rounded-lg p-4 text-center md:text-left", status === "won" ? "bg-mint/12" : "bg-coral/10")}><p className="font-display text-lg font-bold">{status === "won" ? `+${BASE_WIN_SCORE + level.scoreBonus * 10} points earned` : "The hangman is out of chances"}</p><p className="mt-1 text-sm text-ink/55">{status === "won" ? "Great round. Keep your streak alive." : "The word stays hidden. Start a new round and try again."}</p><Button onClick={onRestart} className="mt-3" size="sm"><RotateCcw size={15} /> New word</Button></div>}</div></div>
       </section>
-       <section className="rounded-lg border border-line bg-ink p-4 text-paper shadow-[0_18px_50px_-32px_var(--shadow)] sm:p-7"><div className="mb-5 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-widest text-paper/45">Your score</p><p className="mt-1 font-display text-3xl font-bold sm:text-4xl">{score.toLocaleString()}</p></div><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-paper/10 text-yellow"><Trophy size={20} /></span></div><p className="mb-3 text-xs font-bold uppercase tracking-widest text-paper/45">Guesses</p><div className="grid grid-cols-7 gap-1.5 sm:gap-2">{LETTERS.map((letter) => { const isGuessed = guessed.has(letter); const isCorrect = isGuessed && word.includes(letter); return <button key={letter} disabled={isGuessed || status !== "playing"} onClick={() => onGuess(letter)} aria-label={`Guess ${letter}`} className={cn("aspect-square rounded-md text-xs font-bold transition-all sm:text-sm", !isGuessed && status === "playing" ? "bg-paper/10 text-paper hover:bg-coral hover:text-paper" : isCorrect ? "bg-mint text-ink" : "bg-paper/8 text-paper/25")}>{letter}</button>; })}</div><div className="mt-6 flex items-center justify-between gap-3 border-t border-paper/15 pt-4"><div className="flex min-w-0 items-center gap-2"><Lightbulb size={17} className="shrink-0 text-yellow" /><div className="min-w-0"><p className="text-sm font-semibold">Need a clue?</p><p className="truncate text-xs text-paper/45">Reveal a letter for {HINT_COST} points</p></div></div><Button variant="secondary" size="sm" onClick={onHint} disabled={hintUsed || score < HINT_COST || status !== "playing"}><Gift size={15} /> Hint</Button></div></section>
+        <section className="rounded-lg border border-line bg-ink p-4 text-paper shadow-[0_18px_50px_-32px_var(--shadow)] sm:p-7"><div className="mb-5 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-widest text-paper/45">Your score</p><p className="mt-1 font-display text-3xl font-bold sm:text-4xl">{score.toLocaleString()}</p></div><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-paper/10 text-yellow"><Trophy size={20} /></span></div><p className="mb-3 text-xs font-bold uppercase tracking-widest text-paper/45">Choose a letter</p><div className="grid grid-cols-7 gap-2 sm:gap-2.5">{LETTERS.map((letter) => { const isGuessed = guessed.has(letter); const isCorrect = isGuessed && word.includes(letter); return <button type="button" key={letter} disabled={isGuessed || status !== "playing"} onClick={() => onGuess(letter)} aria-label={`Guess ${letter}`} className={cn("aspect-square min-h-10 touch-manipulation select-none rounded-md text-sm font-bold transition-all active:scale-95 sm:min-h-11 sm:text-base", !isGuessed && status === "playing" ? "cursor-pointer bg-paper/10 text-paper hover:bg-coral hover:text-paper" : isCorrect ? "bg-mint text-ink" : "bg-paper/8 text-paper/25")}>{letter}</button>; })}</div><div className="mt-6 flex items-center justify-between gap-3 border-t border-paper/15 pt-4"><div className="flex min-w-0 items-center gap-2"><Lightbulb size={17} className="shrink-0 text-yellow" /><div className="min-w-0"><p className="text-sm font-semibold">Need a clue?</p><p className="truncate text-xs text-paper/45">Reveal a letter for {HINT_COST} points</p></div></div><Button variant="secondary" size="sm" onClick={onHint} disabled={hintUsed || score < HINT_COST || status !== "playing"}><Gift size={15} /> Hint</Button></div></section>
     </div>
-  </div>;
+   {status === "lost" && <div className="fixed inset-0 z-50 flex min-h-[100dvh] items-center justify-center overflow-y-auto bg-ink/95 p-5 text-paper"><div className="w-full max-w-sm text-center"><div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-coral/15"><X size={48} className="text-coral" strokeWidth={2.5} /></div><p className="text-xs font-bold uppercase tracking-[0.25em] text-coral">Round finished</p><h2 className="mt-3 font-display text-4xl font-bold sm:text-5xl">You lost the game</h2><p className="mx-auto mt-4 max-w-xs text-sm leading-6 text-paper/65">The hangman is out of chances. The word stays hidden — try another round.</p><Button onClick={onRestart} size="lg" className="mt-8 w-full bg-coral text-paper hover:bg-coral/90"><RotateCcw size={18} /> Play again</Button></div></div>}
+   </div>;
+}
+
+function NameEntry({ name, onNameChange, onSubmit }: { name: string; onNameChange: (name: string) => void; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void }) {
+  return <main className="flex min-h-[100dvh] items-center justify-center bg-ink px-5 py-8 text-paper"><form onSubmit={onSubmit} className="w-full max-w-sm text-center"><div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-coral text-paper shadow-lg"><Gamepad2 size={38} /></div><p className="mt-8 text-xs font-bold uppercase tracking-[0.25em] text-coral">Welcome to</p><h1 className="mt-3 font-display text-5xl font-bold tracking-tight">HANGMAN</h1><p className="mt-3 text-sm leading-6 text-paper/60">Enter your name to start playing.</p><label htmlFor="player-name" className="mt-10 block text-left text-sm font-semibold text-paper/80">Your name</label><input id="player-name" value={name} onChange={(event) => onNameChange(event.target.value)} autoComplete="name" autoFocus maxLength={24} placeholder="Enter name" className="mt-2 h-14 w-full rounded-lg border border-paper/20 bg-paper/10 px-4 text-base text-paper outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/30" /><Button type="submit" size="lg" disabled={!name.trim()} className="mt-4 h-14 w-full bg-coral text-paper hover:bg-coral/90">Start game <ChevronRight size={18} /></Button></form></main>;
 }
 
 function HangmanFigure({ wrongGuesses, maxChances, status }: { wrongGuesses: number; maxChances: number; status: GameStatus }) {
