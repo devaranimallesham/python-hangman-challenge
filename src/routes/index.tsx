@@ -240,6 +240,7 @@ function Index() {
         hintUsed={hintUsed}
         status={status}
         score={progress.score}
+         playerName={playerName}
         onModeChange={(nextMode) => startRound(nextMode)}
         onGuess={handleGuess}
         onHint={useHint}
@@ -299,14 +300,14 @@ function Index() {
 }
 
 interface PlayViewProps {
-  mode: Mode; themeName: string; level: (typeof LEVELS)[number]; word: string; revealedWord: string[]; guessed: Set<string>; wrongGuesses: number; maxChances: number; hintUsed: boolean; status: GameStatus; score: number;
+  mode: Mode; themeName: string; level: (typeof LEVELS)[number]; word: string; revealedWord: string[]; guessed: Set<string>; wrongGuesses: number; maxChances: number; hintUsed: boolean; status: GameStatus; score: number; playerName: string;
   onModeChange: (mode: Mode) => void; onGuess: (letter: string) => void; onHint: () => void; onRestart: () => void;
 }
 
-function PlayView({ mode, themeName, level, word, revealedWord, guessed, wrongGuesses, maxChances, hintUsed, status, score, onModeChange, onGuess, onHint, onRestart }: PlayViewProps) {
+function PlayView({ mode, themeName, level, word, revealedWord, guessed, wrongGuesses, maxChances, hintUsed, status, score, playerName, onModeChange, onGuess, onHint, onRestart }: PlayViewProps) {
   const message = status === "won" ? "You got it!" : status === "lost" ? "Round over" : "Choose a letter to begin";
   return <div className="mx-auto max-w-6xl animate-in fade-in duration-500">
-     <div className="mb-6 flex flex-col justify-between gap-4 sm:mb-8 md:flex-row md:items-end"><div><p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-coral">Daily word challenge</p><h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-5xl">Ready to guess?</h1><p className="mt-3 max-w-xl text-sm leading-6 text-ink/55 sm:text-base">A fresh word is waiting. Keep your guesses sharp and save the stick figure.</p></div><div className="flex w-fit items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2.5"><Clock3 size={16} className="text-ink/45" /><span className="text-xs font-semibold sm:text-sm">No sign-in needed</span></div></div>
+     <div className="mb-6 flex flex-col justify-between gap-4 sm:mb-8 md:flex-row md:items-end"><div><p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-coral">Welcome, {playerName}</p><h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-5xl">Ready to guess?</h1><p className="mt-3 max-w-xl text-sm leading-6 text-ink/55 sm:text-base">A fresh word is waiting. Keep your guesses sharp and save the stick figure.</p></div></div>
     <div className="mb-6 flex flex-wrap gap-2">{(["Classic", "Survival", "Random", "Challenge"] as Mode[]).map((item) => <button key={item} onClick={() => onModeChange(item)} className={cn("rounded-lg border px-4 py-2 text-sm font-semibold transition-colors", mode === item ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink/60 hover:border-ink/40 hover:text-ink")}>{item}</button>)}</div>
      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.85fr)]">
        <section className="rounded-lg border border-line bg-surface p-4 shadow-[0_18px_50px_-32px_var(--shadow)] sm:p-8">
