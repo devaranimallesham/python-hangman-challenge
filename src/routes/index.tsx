@@ -5,7 +5,6 @@ import {
   Check,
   ChevronRight,
   CircleHelp,
-  Clock3,
   Flame,
   Gamepad2,
   Gift,
@@ -26,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { ACHIEVEMENTS, BASE_WIN_SCORE, HINT_COST, LEVELS, MAX_WRONG, THEMES } from "@/lib/hangman-data";
 
 const STORAGE_KEY = "hangman-guest-progress";
+const NAME_STORAGE_KEY = "hangman-player-name";
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const FALLBACK_THEME = { name: "Video Games", icon: "🎮", words: [{ word: "MINECRAFT", hint: "Blocky sandbox world" }] };
 const FALLBACK_LEVEL = { number: 1, name: "Rookie", maxLength: 5, scoreBonus: 1 };
@@ -83,6 +83,8 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [view, setView] = useState<View>("play");
   const [hydrated, setHydrated] = useState(false);
+  const [playerName, setPlayerName] = useState("");
+  const [nameInput, setNameInput] = useState("");
   const [progress, setProgress] = useState<Progress>(DEFAULT_PROGRESS);
   const [mode, setMode] = useState<Mode>("Classic");
   const [themeIndex, setThemeIndex] = useState(0);
@@ -98,6 +100,11 @@ function Index() {
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) setProgress({ ...DEFAULT_PROGRESS, ...JSON.parse(saved) });
+      const savedName = window.localStorage.getItem(NAME_STORAGE_KEY);
+      if (savedName) {
+        setPlayerName(savedName);
+        setNameInput(savedName);
+      }
     } catch {
       // A private browsing session can deny storage; the game still works in memory.
     }
@@ -117,6 +124,18 @@ function Index() {
   );
   const isComplete = revealedWord.every((letter) => letter !== "_");
   const accuracy = progress.rounds === 0 ? 0 : Math.round((progress.wins / progress.rounds) * 100);
+
+  const enterGame = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedName = nameInput.trim();
+    if (!trimmedName) return;
+    setPlayerName(trimmedName);
+    try {
+      window.localStorage.setItem(NAME_STORAGE_KEY, trimmedName);
+    } catch {
+      // The game still works if storage is unavailable.
+    }
+  };
 
   const chooseWord = useCallback((nextMode = mode, nextThemeIndex = themeIndex, nextLevel = levelNumber) => {
     const theme = THEMES[nextThemeIndex] ?? THEMES[0] ?? FALLBACK_THEME;
@@ -228,6 +247,14 @@ function Index() {
       />
     );
   };
+
+  if (!hydrated) {
+    return <div className="min-h-screen bg-paper" aria-label="Loading Hangman" />;
+  }
+
+  if (!playerName) {
+    return <NameEntry name={nameInput} onNameChange={setNameInput} onSubmit={enterGame} />;
+  }
 
   return (
     <div className="min-h-screen bg-paper text-ink">
